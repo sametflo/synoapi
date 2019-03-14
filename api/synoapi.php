@@ -17,14 +17,14 @@ class synoapi
     $this->password = $password;
     $this->url = $url;
     $this->cookiefile = tempnam(sys_get_temp_dir(), 'cookie');
-	
+
     if (!function_exists('curl_init'))
       throw new Exception('php cURL extension must be installed and enabled');
-  
+
     $this->curl = curl_init();
     curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($this->curl, CURLOPT_COOKIEJAR, $this->cookiefile);
-	
+
     $this->Login();
   }
 
@@ -38,7 +38,7 @@ class synoapi
   {
     if ($this->response->success)
       return true;
-  
+
     if(isset($this->response->error->code))
       throw new Exception('SYNO Error (code = ' . $this->response->error->code. ')');
     else
@@ -51,10 +51,10 @@ class synoapi
       $params = '&SynoToken=' . $this->token;
     else
       $params = '';
-  
+
     curl_setopt($this->curl, CURLOPT_URL, $this->url . $path . $params);
     $this->response = json_decode(curl_exec($this->curl));
-      return $this->syno_success();
+    return $this->syno_success();
   }
 
   public function Login()
@@ -75,21 +75,25 @@ class synoapi
   {
     return $this->Request('/webapi/entry.cgi?api=SYNO.Core.Certificate.CRT&method=list&version=1');
   }
-  
+
   public function UpdateCertificate($certname, $key, $cert, $chain)
   {
     if(!$this->SearchCertificates())
       return false;
 
+    if(!isset($this->response->data->certificates))
+      return false;
+
     $id='';
     $desc='';
     $default='false';
-    foreach($this->response as $crt)
+    foreach($this->response->data->certificates as $crt)
       if($crt->subject->common_name == $certname) {
         $id = $crt->id;
         $desc = $crt->desc;
         if($crt->is_default == '1')
           $default = 'true';
+        break;
       }
 
     $post = new multipart_data();
@@ -101,7 +105,7 @@ class synoapi
     $post->addpart('as_default', $default);
     $boundary = $post->get_boundary();
     $post = $post->get_postdata();
-	
+
     curl_setopt($this->curl, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary","Content-Length: " . strlen($post)));
     curl_setopt($this->curl, CURLOPT_POST, 1);
     curl_setopt($this->curl, CURLOPT_POSTFIELDS, $post);
@@ -109,7 +113,7 @@ class synoapi
     $this->response = json_decode(curl_exec($this->curl));
     return $this->syno_success();
   }
-  
+
 }
 
 class multipart_data
@@ -123,12 +127,12 @@ class multipart_data
     $this->postdata = '';
     $this->boundary = "---------------------" . md5(mt_rand() . microtime());
   }
-  
+
   public function get_postdata()
   {
     return $this->postdata . "--" . $this->boundary . "--\r\n";
   }
-  
+
   public function get_boundary()
   {
     return $this->boundary;
