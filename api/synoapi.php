@@ -47,14 +47,14 @@ class synoapi
 
   public function Request($path)
   {
-	if($this->token != '')
+    if($this->token != '')
       $params = '&SynoToken=' . $this->token;
     else
       $params = '';
   
     curl_setopt($this->curl, CURLOPT_URL, $this->url . $path . $params);
     $this->response = json_decode(curl_exec($this->curl));
-	return $this->syno_success();
+      return $this->syno_success();
   }
 
   public function Login()
@@ -68,7 +68,7 @@ class synoapi
   {
     curl_setopt($this->curl, CURLOPT_URL, $this->url . '/webman/logout.cgi');
     curl_exec($this->curl);
-	$this->token = '';
+    $this->token = '';
   }
 
   public function SearchCertificates()
@@ -78,31 +78,31 @@ class synoapi
   
   public function UpdateCertificate($certname, $key, $cert, $chain)
   {
-	if(!$this->SearchCertificates())
-	  return false;
+    if(!$this->SearchCertificates())
+      return false;
 
     $id='';
-	$desc='';
-	$default='false';
+    $desc='';
+    $default='false';
     foreach($this->response as $crt)
       if($crt->subject->common_name == $certname) {
         $id = $crt->id;
-		$desc = $crt->desc;
-		if($crt->is_default == '1')
-		  $default = 'true';
+        $desc = $crt->desc;
+        if($crt->is_default == '1')
+          $default = 'true';
       }
 
-	$post = new multipart_data();
-	$post->addfile('key', $key);
+    $post = new multipart_data();
+    $post->addfile('key', $key);
     $post->addfile('cert', $cert);
     $post->addfile('inter_cert', $chain);
     $post->addpart('id', $id);
     $post->addpart('desc', $desc);
     $post->addpart('as_default', $default);
-	$boundary = $post->get_boundary();
-	$post = $post->get_postdata();
+    $boundary = $post->get_boundary();
+    $post = $post->get_postdata();
 	
-	curl_setopt($this->curl, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary","Content-Length: " . strlen($post)));
+    curl_setopt($this->curl, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary","Content-Length: " . strlen($post)));
     curl_setopt($this->curl, CURLOPT_POST, 1);
     curl_setopt($this->curl, CURLOPT_POSTFIELDS, $post);
     curl_setopt($this->curl, CURLOPT_URL, $this->url . "/webapi/entry.cgi?api=SYNO.Core.Certificate&method=import&version=1&SynoToken=$this->token");
@@ -144,7 +144,7 @@ class multipart_data
     $this->postdata .= "--$this->boundary\r\n" .
                        "Content-Disposition: form-data; name=\"$name\"$filename\r\n" .
                        "Content-Type: application/x-x509-ca-cert\r\n\r\n" .
-		               "$data\r\n";
+                       "$data\r\n";
   }
 
   public function addfile($name, $filename)
