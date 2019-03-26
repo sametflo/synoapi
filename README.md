@@ -18,3 +18,6 @@ Example for letsencrypt's directories:
 /etc/letsencrypt/live/yourdomain.com/privkey.pem
 /etc/letsencrypt/live/yourdomain.com/cert.pem
 /etc/letsencrypt/live/yourdomain.com/chain.pem
+
+I use this code on a raspberry pi that renew a letsencrypt wildcard certificate (*.yourdomain.com).
+That way my raspberry pi is able to update every certificates of my peripherals (synology router and my ds216).
