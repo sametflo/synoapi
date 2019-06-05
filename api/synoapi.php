@@ -78,23 +78,39 @@ class synoapi
 
   public function UpdateCertificate($certname, $key, $cert, $chain)
   {
-    if(!$this->SearchCertificates())
-      return false;
-
-    if(!isset($this->response->data->certificates))
-      return false;
+	echo("Starting to update '$certname'\n");
+    if(!$this->SearchCertificates()) {
+		echo("Error searching certificates\n");
+		return false;
+	}
+	
+    if(!isset($this->response->data->certificates))	{
+		echo("No certificates returned\n");
+		return false;
+	}	
 
     $id='';
     $desc='';
     $default='false';
-    foreach($this->response->data->certificates as $crt)
-      if($crt->subject->common_name == $certname) {
+	$cn='';
+    foreach($this->response->data->certificates as $crt) {
+	  $cn = $crt->subject->common_name;
+	  if($cn == $certname) {
+		echo("Certificate found!\n");
         $id = $crt->id;
         $desc = $crt->desc;
         if($crt->is_default == '1')
           $default = 'true';
         break;
       }
+	  else {
+		echo("'$cn' skipped\n");
+	  }	
+	}
+	
+	if(empty($id)) {
+		echo("Certificate not found. Create a new one.\n");
+	}
 
     $post = new multipart_data();
     $post->addfile('key', $key);
