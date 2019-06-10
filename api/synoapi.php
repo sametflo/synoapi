@@ -3,6 +3,8 @@
 class synoapi
 {
 
+  private $lastError;
+  private $lastErrorCode;
   private $username;
   private $password;
   private $url;
@@ -13,6 +15,8 @@ class synoapi
 
   function __construct($url, $username, $password)
   {
+    $this->lastError = '';
+    $this->lastErrorCode = 0;
     $this->username = $username;
     $this->password = $password;
     $this->url = $url;
@@ -36,13 +40,23 @@ class synoapi
 
   private function syno_success()
   {
+    $this->lastError = '';
+    $this->lastErrorCode = 0;
     if ($this->response->success)
       return true;
 
-    if(isset($this->response->error->code))
-      throw new Exception('SYNO Error (code = ' . $this->response->error->code. ')');
-    else
-      throw new Exception('Unknown error' . $this->response);
+    if(isset($this->response->error->code)) {
+      $this->lastError = 'SYNO Error code = ' . $this->response->error->code;
+      $this->lastErrorCode = $this->response->error->code;
+    } else
+      $this->lastError = 'Unknown error' . $this->response;
+
+    return false;
+  }
+
+  public function GetLastError()
+  {
+    return $this->lastError;
   }
 
   public function Request($path)
@@ -71,6 +85,27 @@ class synoapi
     $this->token = '';
   }
 
+  public function dump_response()
+  {
+    var_dump($this->response);
+  }
+
+  public function Network_Info($ifname)
+  {
+    if($this->Request("/webapi/entry.cgi?api=SYNO.Core.Network.LocalBridge&method=get&version=1&ifname=$ifname"))
+      return $this->response;
+    else
+      return false;
+  }
+
+  public function NSM_Devices()
+  {
+    if($this->Request('/webapi/entry.cgi?api=SYNO.Core.Network.NSM.Device&method=get&version=4&conntype="all"'))
+      return $this->response;
+    else
+      return false;
+  }
+
   public function SearchCertificates()
   {
     return $this->Request('/webapi/entry.cgi?api=SYNO.Core.Certificate.CRT&method=list&version=1');
@@ -78,39 +113,24 @@ class synoapi
 
   public function UpdateCertificate($certname, $key, $cert, $chain)
   {
-	echo("Starting to update '$certname'\n");
-    if(!$this->SearchCertificates()) {
-		echo("Error searching certificates\n");
-		return false;
-	}
-	
-    if(!isset($this->response->data->certificates))	{
-		echo("No certificates returned\n");
-		return false;
-	}	
+    $id = '';
+    $desc = '';
+    $default = 'false';
 
-    $id='';
-    $desc='';
-    $default='false';
-	$cn='';
-    foreach($this->response->data->certificates as $crt) {
-	  $cn = $crt->subject->common_name;
-	  if($cn == $certname) {
-		echo("Certificate found!\n");
-        $id = $crt->id;
-        $desc = $crt->desc;
-        if($crt->is_default == '1')
-          $default = 'true';
-        break;
-      }
-	  else {
-		echo("'$cn' skipped\n");
-	  }	
-	}
-	
-	if(empty($id)) {
-		echo("Certificate not found. Create a new one.\n");
-	}
+    if($this->SearchCertificates()) {
+
+      if(!isset($this->response->data->certificates))
+        return false;
+
+      foreach($this->response->data->certificates as $crt)
+        if($crt->subject->common_name == $certname) {
+          $id = $crt->id;
+          $desc = $crt->desc;
+          if($crt->is_default == '1')
+            $default = 'true';
+          break;
+        }
+    }
 
     $post = new multipart_data();
     $post->addfile('key', $key);
