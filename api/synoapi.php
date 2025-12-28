@@ -314,7 +314,7 @@ class synoapi
     $post->addFile('inter_cert', $chain);
     $post->addPart('id', $id);
     $post->addPart('desc', $desc);
-    $post->addPart('as_default', $default);
+    $post->addPart('set_as_default', $default);
     $data = $post->postdata();
 
     curl_setopt($this->curl, CURLOPT_HTTPHEADER, [ 'Content-Type: multipart/form-data; boundary=' . $post->boundary(), 'Content-Length: ' . strlen($data) ]);
@@ -395,3 +395,4 @@ class multipart_data
   }
 
 }
+
